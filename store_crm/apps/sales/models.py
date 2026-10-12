@@ -165,3 +165,64 @@ class SaleItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} × {self.quantity}"
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from django.db import models
+
+
+class SaleReturn(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    sale = models.ForeignKey(
+        "sales.Sale",
+        on_delete=models.PROTECT,
+        related_name="returns",
+    )
+    warehouse = models.ForeignKey(
+        "warehouse.Warehouse",
+        on_delete=models.PROTECT,
+        related_name="sale_returns",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sale_returns",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sale_returns"
+        ordering = ["-created_at"]
+
+
+class SaleReturnItem(models.Model):
+    sale_return = models.ForeignKey(
+        SaleReturn,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    sale_item = models.ForeignKey(
+        "sales.SaleItem",
+        on_delete=models.PROTECT,
+        related_name="return_items",
+    )
+    quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+        validators=[MinValueValidator(Decimal("0.001"))],
+    )
+
+    class Meta:
+        db_table = "sale_return_items"

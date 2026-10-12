@@ -228,3 +228,71 @@ class StockReceiptItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} × {self.quantity}"
+class StockTransfer(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        IN_PROGRESS = "in_progress", "In progress"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    source_warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.PROTECT,
+        related_name="outgoing_transfers",
+    )
+    destination_warehouse = models.ForeignKey(
+        Warehouse,
+        on_delete=models.PROTECT,
+        related_name="incoming_transfers",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="stock_transfers",
+    )
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "stock_transfers"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Transfer #{self.pk}"
+
+
+class StockTransferItem(models.Model):
+    transfer = models.ForeignKey(
+        StockTransfer,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.PROTECT,
+        related_name="transfer_items",
+    )
+    quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+        validators=[MinValueValidator(0.001)],
+    )
+
+    class Meta:
+        db_table = "stock_transfer_items"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["transfer", "product"],
+                name="unique_product_per_transfer",
+            ),
+            models.CheckConstraint(
+                condition=Q(quantity__gt=0),
+                name="transfer_item_quantity_positive",
+            ),
+        ]
