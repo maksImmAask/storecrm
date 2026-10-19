@@ -19,7 +19,17 @@ from apps.warehouse.views import (
     StockViewSet,
     WarehouseViewSet,
 )
-
+from apps.sales.return_views import SaleReturnViewSet
+from apps.audit.views import AuditLogViewSet
+from apps.finance.views import ExpenseCategoryViewSet, ExpenseViewSet
+from apps.customers.debt_views import DebtViewSet
+from apps.notifications.views import NotificationViewSet
+from apps.reports.views import (
+    DashboardView,
+    SalesReportView,
+    StockReportView,
+)
+from apps.warehouse.transfer_views import StockTransferViewSet
 
 router = DefaultRouter()
 
@@ -32,6 +42,8 @@ router.register("suppliers", SupplierViewSet, basename="supplier")
 router.register("customers", CustomerViewSet, basename="customer")
 router.register("warehouses", WarehouseViewSet, basename="warehouse")
 router.register("stock", StockViewSet, basename="stock")
+router.register("sale-returns", SaleReturnViewSet, basename="sale-return")
+router.register("audit-logs", AuditLogViewSet, basename="audit-log")
 router.register(
     "stock-movements",
     StockMovementViewSet,
@@ -55,4 +67,24 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
+    path("api/dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("api/reports/sales/", SalesReportView.as_view(), name="sales-report"),
+    path("api/reports/stock/", StockReportView.as_view(), name="stock-report"),
 ]
+router.register("expenses", ExpenseViewSet, basename="expense")
+router.register(
+    "expense-categories",
+    ExpenseCategoryViewSet,
+    basename="expense-category",
+)
+router.register("debts", DebtViewSet, basename="debt")
+router.register(
+    "notifications",
+    NotificationViewSet,
+    basename="notification",
+)
+router.register(
+    "stock-transfers",
+    StockTransferViewSet,
+    basename="stock-transfer",
+)

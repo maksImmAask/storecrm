@@ -202,3 +202,44 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+CELERY_BROKER_URL = (
+    f"redis://{os.getenv('REDIS_HOST', 'redis')}:"
+    f"{os.getenv('REDIS_PORT', '6379')}/0"
+)
+CELERY_RESULT_BACKEND = (
+    f"redis://{os.getenv('REDIS_HOST', 'redis')}:"
+    f"{os.getenv('REDIS_PORT', '6379')}/1"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Tashkent"
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-old-notifications-daily": {
+        "task": "apps.notifications.tasks.cleanup_old_notifications",
+        "schedule": 86400,
+    },
+    "daily-summary": {
+        "task": "apps.notifications.tasks.send_daily_summary",
+        "schedule": 86400,
+    },
+}
+ASGI_APPLICATION = "config.asgi.application"
+
+INSTALLED_APPS += [
+    "channels",
+]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                (
+                    f"redis://{os.getenv('REDIS_HOST', 'redis')}:"
+                    f"{os.getenv('REDIS_PORT', '6379')}/2"
+                )
+            ],
+        },
+    },
+}

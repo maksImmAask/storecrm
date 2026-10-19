@@ -46,3 +46,36 @@ class SaleAdmin(admin.ModelAdmin):
         "completed_at",
     )
     inlines = [SaleItemInline]
+from apps.sales.models import SaleReturn, SaleReturnItem
+
+
+class SaleReturnItemInline(admin.TabularInline):
+    model = SaleReturnItem
+    extra = 0
+    autocomplete_fields = ("sale_item",)
+
+
+@admin.register(SaleReturn)
+class SaleReturnAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "sale",
+        "warehouse",
+        "status",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("status", "created_at")
+    autocomplete_fields = ("sale", "warehouse", "created_by")
+    readonly_fields = ("created_at", "completed_at")
+    inlines = [SaleReturnItemInline]
+from django.contrib import admin
+from .models import Sale, SaleItem
+
+
+
+
+@admin.register(SaleItem)
+class SaleItemAdmin(admin.ModelAdmin):
+    list_display = ("id", "sale", "product", "quantity")
+    search_fields = ("sale__id", "product__name")

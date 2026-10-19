@@ -96,3 +96,30 @@ class StockMovementAdmin(admin.ModelAdmin):
         "created_by",
         "created_at",
     )
+from apps.warehouse.models import StockTransfer, StockTransferItem
+
+
+class StockTransferItemInline(admin.TabularInline):
+    model = StockTransferItem
+    extra = 0
+    autocomplete_fields = ("product",)
+
+
+@admin.register(StockTransfer)
+class StockTransferAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "source_warehouse",
+        "destination_warehouse",
+        "status",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("status", "created_at")
+    autocomplete_fields = (
+        "source_warehouse",
+        "destination_warehouse",
+        "created_by",
+    )
+    readonly_fields = ("created_at", "completed_at")
+    inlines = [StockTransferItemInline]
