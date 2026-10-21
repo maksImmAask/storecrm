@@ -11,8 +11,7 @@ from apps.warehouse.models import Stock, StockMovement
 @transaction.atomic
 def complete_sale(sale_id, user):
     sale = (
-        Sale.objects
-        .select_for_update()
+        Sale.objects.select_for_update(of=("self",))
         .select_related(
             "branch",
             "branch__company",

@@ -12,7 +12,7 @@ from apps.warehouse.models import Stock, StockMovement
 @transaction.atomic
 def complete_return(return_id, user):
     sale_return = (
-        SaleReturn.objects.select_for_update()
+        SaleReturn.objects.select_for_update(of=("self",))
         .select_related(
             "sale",
             "sale__branch__company",
