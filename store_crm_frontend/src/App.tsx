@@ -16,6 +16,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import SalesPage from "./pages/SalesPage";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import ApiDataPage from "./components/ApiDataPage";
@@ -113,16 +114,7 @@ function AppRoutes() {
 
 <Route path="suppliers" element={<SuppliersPage />} />
 
-<Route
-  path="sales"
-  element={
-    <ApiDataPage
-      title="Продажи"
-      description="История продаж и информация о чеках."
-      endpoint="/sales/"
-    />
-  }
-/>
+<Route path="sales" element={<SalesPage />} />
 
 <Route
   path="debts"
