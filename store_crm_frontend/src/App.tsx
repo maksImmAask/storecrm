@@ -16,6 +16,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import ReturnsPage from "./pages/ReturnsPage";
 import SalesPage from "./pages/SalesPage";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
@@ -115,6 +116,7 @@ function AppRoutes() {
 <Route path="suppliers" element={<SuppliersPage />} />
 
 <Route path="sales" element={<SalesPage />} />
+<Route path="returns" element={<ReturnsPage />} />
 
 <Route
   path="debts"

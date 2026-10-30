@@ -20,6 +20,7 @@ import {
   IconShoppingCart,
   IconUsers,
   IconChartBar,
+  IconReceiptRefund,
   IconLogout,
   IconTruck,
   IconWallet,
@@ -80,6 +81,10 @@ const navigation = [
   label: "Остатки",
   icon: IconPackages,
   path: "/stock",
+},{
+  label: "Возвраты",
+  icon: IconReceiptRefund,
+  path: "/returns",
 },
 ];
 
