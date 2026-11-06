@@ -3,6 +3,7 @@ from apps.audit.models import AuditLog
 
 def log_action(
     *,
+    company,
     user=None,
     action,
     instance,
@@ -11,7 +12,12 @@ def log_action(
     ip_address=None,
 ):
     return AuditLog.objects.create(
-        user=user if getattr(user, "is_authenticated", False) else None,
+        company=company,
+        user=(
+            user
+            if getattr(user, "is_authenticated", False)
+            else None
+        ),
         action=action,
         model_name=instance._meta.label,
         object_id=str(instance.pk),

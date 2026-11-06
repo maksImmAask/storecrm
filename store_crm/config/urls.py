@@ -31,6 +31,7 @@ from apps.reports.views import (
 )
 from apps.warehouse.transfer_views import StockTransferViewSet
 
+
 router = DefaultRouter()
 
 router.register("companies", CompanyViewSet, basename="company")
@@ -44,6 +45,7 @@ router.register("warehouses", WarehouseViewSet, basename="warehouse")
 router.register("stock", StockViewSet, basename="stock")
 router.register("sale-returns", SaleReturnViewSet, basename="sale-return")
 router.register("audit-logs", AuditLogViewSet, basename="audit-log")
+
 router.register(
     "stock-movements",
     StockMovementViewSet,
@@ -54,7 +56,25 @@ router.register(
     StockReceiptViewSet,
     basename="stock-receipt",
 )
+router.register(
+    "stock-transfers",
+    StockTransferViewSet,
+    basename="stock-transfer",
+)
+
 router.register("sales", SaleViewSet, basename="sale")
+router.register("expenses", ExpenseViewSet, basename="expense")
+router.register(
+    "expense-categories",
+    ExpenseCategoryViewSet,
+    basename="expense-category",
+)
+router.register("debts", DebtViewSet, basename="debt")
+router.register(
+    "notifications",
+    NotificationViewSet,
+    basename="notification",
+)
 
 
 urlpatterns = [
@@ -71,20 +91,3 @@ urlpatterns = [
     path("api/reports/sales/", SalesReportView.as_view(), name="sales-report"),
     path("api/reports/stock/", StockReportView.as_view(), name="stock-report"),
 ]
-router.register("expenses", ExpenseViewSet, basename="expense")
-router.register(
-    "expense-categories",
-    ExpenseCategoryViewSet,
-    basename="expense-category",
-)
-router.register("debts", DebtViewSet, basename="debt")
-router.register(
-    "notifications",
-    NotificationViewSet,
-    basename="notification",
-)
-router.register(
-    "stock-transfers",
-    StockTransferViewSet,
-    basename="stock-transfer",
-)

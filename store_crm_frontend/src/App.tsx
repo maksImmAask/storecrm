@@ -16,6 +16,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import StockTransfersPage from "./pages/StockTransfersPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import SalesPage from "./pages/SalesPage";
 import CustomersPage from "./pages/CustomersPage";
@@ -28,7 +29,11 @@ import EntityListPage from "./pages/EntityListPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import NotFoundPage from "./pages/NotFoundPage";
+import ExpensesPage from "./pages/ExpensesPage";
 import ProductsPage from "./pages/ProductsPage";
+import ReportsPage from "./pages/ReportsPage";
+import StockReceiptsPage from "./pages/StockReceiptsPage";
+import DebtsPage from "./pages/DebtsPage";
 const theme = createTheme({
   primaryColor: "blue",
   defaultRadius: "md",
@@ -112,12 +117,16 @@ function AppRoutes() {
           />
 
           <Route path="customers" element={<CustomersPage />} />
-
+<Route path="expenses" element={<ExpensesPage />} />
 <Route path="suppliers" element={<SuppliersPage />} />
-
+<Route
+  path="stock-transfers"
+  element={<StockTransfersPage />}
+/>
+<Route path="debts" element={<DebtsPage />} />
 <Route path="sales" element={<SalesPage />} />
 <Route path="returns" element={<ReturnsPage />} />
-
+<Route path="reports" element={<ReportsPage />} />
 <Route
   path="debts"
   element={
@@ -146,6 +155,10 @@ function AppRoutes() {
             }
           />
           <Route path="stock" element={<StockPage />} />
+          <Route
+  path="stock-receipts"
+  element={<StockReceiptsPage />}
+/>
 
           <Route
             path="reports"

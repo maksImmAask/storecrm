@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.sales.models import Sale, SaleReturn, SaleReturnItem
 from apps.warehouse.models import Stock, StockMovement
-
+from apps.audit.services import log_action
 
 @transaction.atomic
 def complete_return(return_id, user):
@@ -94,5 +94,19 @@ def complete_return(return_id, user):
     sale_return.status = SaleReturn.Status.COMPLETED
     sale_return.completed_at = timezone.now()
     sale_return.save(update_fields=["status", "completed_at"])
-
+    log_action(
+        company=company,
+        user=user,
+        action="sale_return.completed",
+        instance=sale_return,
+        old_data={
+            "status": SaleReturn.Status.DRAFT,
+        },
+        new_data={
+            "status": SaleReturn.Status.COMPLETED,
+            "sale_id": sale_return.sale_id,
+            "warehouse_id": sale_return.warehouse_id,
+            "reason": sale_return.reason,
+        },
+    )
     return sale_return

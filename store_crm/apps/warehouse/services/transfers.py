@@ -7,6 +7,7 @@ from apps.warehouse.models import (
     StockMovement,
     StockTransfer,
 )
+from apps.audit.services import log_action
 
 
 @transaction.atomic
@@ -19,6 +20,7 @@ def complete_transfer(transfer_id, user):
         )
         .get(pk=transfer_id)
     )
+    old_status = transfer.status
 
     if transfer.status not in (
         StockTransfer.Status.DRAFT,
@@ -118,5 +120,19 @@ def complete_transfer(transfer_id, user):
     transfer.status = StockTransfer.Status.COMPLETED
     transfer.completed_at = timezone.now()
     transfer.save(update_fields=["status", "completed_at"])
-
+        
+    log_action(
+        company=company,
+        user=user,
+        action="stock_transfer.completed",
+        instance=transfer,
+        old_data={
+            "status": transfer.status,
+        },
+        new_data={
+            "status": StockTransfer.Status.COMPLETED,
+            "source_warehouse_id": source.id,
+            "destination_warehouse_id": destination.id,
+        },
+    )
     return transfer

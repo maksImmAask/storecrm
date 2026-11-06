@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.sales.models import Sale
 from apps.warehouse.models import Stock, StockMovement
-
+from apps.audit.services import log_action
 
 @transaction.atomic
 def complete_sale(sale_id, user):
@@ -22,6 +22,7 @@ def complete_sale(sale_id, user):
         )
         .get(pk=sale_id)
     )
+    old_status = sale.status
 
     if sale.status != Sale.Status.DRAFT:
         raise ValidationError(
@@ -175,5 +176,19 @@ def complete_sale(sale_id, user):
             "cashier",
         ]
     )
-
+    log_action(
+        company=company,
+        user=user,
+        action="sale.completed",
+        instance=sale,
+        old_data={
+            "status": old_status,
+        },
+        new_data={
+            "status": Sale.Status.COMPLETED,
+            "total_amount": str(sale.total_amount),
+            "paid_amount": str(sale.paid_amount),
+            "payment_type": sale.payment_type,
+        },
+    )
     return sale

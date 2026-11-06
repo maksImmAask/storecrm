@@ -7,7 +7,7 @@ from apps.warehouse.models import (
     StockMovement,
     StockReceipt,
 )
-
+from apps.audit.services import log_action
 
 @transaction.atomic
 def complete_receipt(receipt_id, user):
@@ -90,5 +90,18 @@ def complete_receipt(receipt_id, user):
     receipt.save(
         update_fields=["status", "completed_at"]
     )
-
+    log_action(
+        company=company,
+        user=user,
+        action="stock_receipt.completed",
+        instance=receipt,
+        old_data={
+            "status": StockReceipt.Status.DRAFT,
+        },
+        new_data={
+            "status": StockReceipt.Status.COMPLETED,
+            "document_number": receipt.document_number,
+            "warehouse_id": receipt.warehouse_id,
+        },
+    )
     return receipt

@@ -4,34 +4,68 @@ from apps.warehouse.models import StockTransfer, StockTransferItem
 
 
 class StockTransferItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
     class Meta:
         model = StockTransferItem
-        fields = ["id", "product", "quantity"]
-        read_only_fields = ["id"]
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "quantity",
+        ]
+        read_only_fields = ["id", "product_name"]
 
 
 class StockTransferSerializer(serializers.ModelSerializer):
     items = StockTransferItemSerializer(many=True)
+
+    source_warehouse_name = serializers.CharField(
+        source="source_warehouse.name",
+        read_only=True,
+    )
+    destination_warehouse_name = serializers.CharField(
+        source="destination_warehouse.name",
+        read_only=True,
+    )
+    created_by_name = serializers.CharField(
+        source="created_by.get_full_name",
+        read_only=True,
+    )
 
     class Meta:
         model = StockTransfer
         fields = [
             "id",
             "source_warehouse",
+            "source_warehouse_name",
             "destination_warehouse",
+            "destination_warehouse_name",
             "status",
             "created_by",
+            "created_by_name",
             "comment",
             "created_at",
             "completed_at",
             "items",
         ]
         read_only_fields = [
-            "id", "status", "created_by", "created_at", "completed_at",
+            "id",
+            "status",
+            "created_by",
+            "created_by_name",
+            "created_at",
+            "completed_at",
+            "source_warehouse_name",
+            "destination_warehouse_name",
         ]
 
     def validate(self, attrs):
         user = self.context["request"].user
+
         source = attrs.get(
             "source_warehouse",
             getattr(self.instance, "source_warehouse", None),
@@ -42,20 +76,21 @@ class StockTransferSerializer(serializers.ModelSerializer):
         )
 
         if source and source.branch.company.owner_id != user.id:
-            raise serializers.ValidationError(
-                {"source_warehouse": "Access denied."}
-            )
+            raise serializers.ValidationError({
+                "source_warehouse": "Access denied."
+            })
 
         if destination and destination.branch.company.owner_id != user.id:
-            raise serializers.ValidationError(
-                {"destination_warehouse": "Access denied."}
-            )
+            raise serializers.ValidationError({
+                "destination_warehouse": "Access denied."
+            })
 
         if source and destination:
             if source.branch.company_id != destination.branch.company_id:
                 raise serializers.ValidationError(
                     "Warehouses must belong to the same company."
                 )
+
             if source.id == destination.id:
                 raise serializers.ValidationError(
                     "Warehouses must be different."
@@ -69,10 +104,30 @@ class StockTransferSerializer(serializers.ModelSerializer):
                 "This transfer can no longer be edited."
             )
 
+        items = attrs.get("items")
+
+        if items is not None:
+            product_ids = [item["product"].id for item in items]
+
+            if len(product_ids) != len(set(product_ids)):
+                raise serializers.ValidationError({
+                    "items": "Each product may appear only once."
+                })
+
+            if source:
+                company_id = source.branch.company_id
+
+                for item in items:
+                    if item["product"].company_id != company_id:
+                        raise serializers.ValidationError({
+                            "items": "Product belongs to another company."
+                        })
+
         return attrs
 
     def create(self, validated_data):
         items = validated_data.pop("items")
+
         transfer = StockTransfer.objects.create(
             **validated_data,
             created_by=self.context["request"].user,
@@ -91,10 +146,12 @@ class StockTransferSerializer(serializers.ModelSerializer):
 
         for field, value in validated_data.items():
             setattr(instance, field, value)
+
         instance.save()
 
         if items is not None:
             instance.items.all().delete()
+
             for item in items:
                 StockTransferItem.objects.create(
                     transfer=instance,

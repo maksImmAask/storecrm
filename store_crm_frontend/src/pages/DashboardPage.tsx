@@ -1,87 +1,104 @@
-
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Alert,
-  Card,
+  Button,
   Grid,
   Group,
   Loader,
+  Paper,
   SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
   Title,
 } from "@mantine/core";
-
 import {
-  IconCash,
-  IconChartLine,
-  IconUsers,
-  IconReceipt,
   IconAlertTriangle,
+  IconCash,
+  IconChartBar,
   IconRefresh,
+  IconReceipt,
+  IconShoppingCart,
+  IconTrendingUp,
+  IconUsers,
+  IconWallet,
 } from "@tabler/icons-react";
 
-import { useCallback, useEffect, useState } from "react";
 import api from "../api/client";
 
 interface DashboardData {
-  [key: string]: unknown;
+  date: string;
+  sales_today: {
+    revenue: number | string;
+    checks: number;
+  };
+  sales_month: {
+    revenue: number | string;
+    checks: number;
+  };
+  average_check_today: number | string;
+  expenses_month: number | string;
+  revenue_minus_expenses_month: number | string;
+  customers_with_debt: number;
+  stock_without_available_quantity: number;
 }
 
-interface Metric {
+interface MetricCardProps {
   title: string;
   value: string;
   description: string;
-  icon: typeof IconCash;
-  color: string;
+  icon: ReactNode;
+  color: "blue" | "green" | "orange" | "red" | "teal" | "violet";
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-
-  if (typeof value === "number") {
-    return new Intl.NumberFormat("ru-RU", {
-      maximumFractionDigits: 2,
-    }).format(value);
-  }
-
-  if (typeof value === "string" || typeof value === "boolean") {
-    return String(value);
-  }
-
-  return JSON.stringify(value);
+function formatMoney(value: number | string): string {
+  return new Intl.NumberFormat("ru-RU", {
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0) + " сум";
 }
 
-function getNumber(data: DashboardData, keys: string[]): number | null {
-  for (const key of keys) {
-    const value = data[key];
+function formatDate(value: string): string {
+  if (!value) return "";
 
-    if (typeof value === "number") {
-      return value;
-    }
+  const date = new Date(`${value}T00:00:00`);
 
-    if (typeof value === "string" && value.trim() !== "") {
-      const parsed = Number(value);
-
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-  }
-
-  return null;
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
-function formatMoney(value: number | null): string {
-  if (value === null) {
-    return "—";
-  }
+function MetricCard({
+  title,
+  value,
+  description,
+  icon,
+  color,
+}: MetricCardProps) {
+  return (
+    <Paper withBorder shadow="xs" radius="md" p="lg">
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Stack gap={5}>
+          <Text size="sm" c="dimmed" fw={500}>
+            {title}
+          </Text>
 
-  return `${new Intl.NumberFormat("ru-RU", {
-    maximumFractionDigits: 2,
-  }).format(value)} сум`;
+          <Text fw={700} size="xl">
+            {value}
+          </Text>
+
+          <Text size="xs" c="dimmed">
+            {description}
+          </Text>
+        </Stack>
+
+        <ThemeIcon size={48} radius="md" variant="light" color={color}>
+          {icon}
+        </ThemeIcon>
+      </Group>
+    </Paper>
+  );
 }
 
 export default function DashboardPage() {
@@ -90,28 +107,16 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
 
   const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
     try {
-      const response = await api.get("/dashboard/");
+      setLoading(true);
+      setError("");
 
-      const result = response.data;
+      const response = await api.get<DashboardData>("/dashboard/");
 
-      if (result && typeof result === "object" && !Array.isArray(result)) {
-        setData(result as DashboardData);
-      } else {
-        setData({ result });
-      }
+      setData(response.data);
     } catch (err: unknown) {
-      const message =
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err
-          ? "Не удалось загрузить статистику. Проверьте доступ к API."
-          : "Не удалось подключиться к серверу.";
-
-      setError(message);
+      console.error("Dashboard loading error:", err);
+      setError("Не удалось загрузить статистику. Проверьте подключение к серверу.");
     } finally {
       setLoading(false);
     }
@@ -121,196 +126,176 @@ export default function DashboardPage() {
     void loadDashboard();
   }, [loadDashboard]);
 
-  const revenue = data
-    ? getNumber(data, ["today_revenue", "revenue_today", "today_sales"])
-    : null;
+  if (loading && !data) {
+    return (
+      <Stack align="center" justify="center" py={100}>
+        <Loader size="lg" />
+        <Text c="dimmed">Загрузка статистики...</Text>
+      </Stack>
+    );
+  }
 
-  const monthRevenue = data
-    ? getNumber(data, ["month_revenue", "revenue_month", "monthly_revenue"])
-    : null;
+  if (error && !data) {
+    return (
+      <Stack>
+        <Alert color="red" title="Ошибка">
+          {error}
+        </Alert>
 
-  const customers = data
-    ? getNumber(data, ["customers_count", "total_customers", "customers"])
-    : null;
+        <Button
+          leftSection={<IconRefresh size={16} />}
+          onClick={() => void loadDashboard()}
+          w="fit-content"
+        >
+          Повторить
+        </Button>
+      </Stack>
+    );
+  }
 
-  const sales = data
-    ? getNumber(data, ["today_checks", "checks_today", "today_sales_count"])
-    : null;
+  if (!data) return null;
 
-  const metrics: Metric[] = [
-    {
-      title: "Выручка сегодня",
-      value: formatMoney(revenue),
-      description: "За текущий день",
-      icon: IconCash,
-      color: "green",
-    },
-    {
-      title: "Выручка за месяц",
-      value: formatMoney(monthRevenue),
-      description: "За текущий месяц",
-      icon: IconChartLine,
-      color: "blue",
-    },
-    {
-      title: "Клиенты",
-      value: customers === null ? "—" : formatValue(customers),
-      description: "По данным API",
-      icon: IconUsers,
-      color: "violet",
-    },
-    {
-      title: "Продажи сегодня",
-      value: sales === null ? "—" : formatValue(sales),
-      description: "Количество чеков",
-      icon: IconReceipt,
-      color: "orange",
-    },
-  ];
+  const profit = Number(data.revenue_minus_expenses_month);
+  const profitColor = profit >= 0 ? "green" : "red";
 
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="center">
-        <div>
-          <Title order={3}>Обзор бизнеса</Title>
+        <Stack gap={3}>
+          <Title order={2}>Главная панель</Title>
           <Text c="dimmed" size="sm">
-            Основные показатели вашей компании
+            Обзор работы магазина на {formatDate(data.date)}
           </Text>
-        </div>
+        </Stack>
 
-        <Group gap="xs">
-          <IconRefresh size={17} />
-          <Text
-            size="sm"
-            c="blue"
-            style={{ cursor: "pointer" }}
-            onClick={() => void loadDashboard()}
-          >
-            Обновить
-          </Text>
-        </Group>
+        <Button
+          variant="light"
+          leftSection={<IconRefresh size={16} />}
+          onClick={() => void loadDashboard()}
+          loading={loading}
+        >
+          Обновить
+        </Button>
       </Group>
 
       {error && (
-        <Alert
-          icon={<IconAlertTriangle size={18} />}
-          title="Ошибка загрузки"
-          color="red"
-        >
+        <Alert color="red" title="Не удалось обновить данные">
           {error}
         </Alert>
       )}
 
-      {loading ? (
-        <Group justify="center" py="xl">
-          <Loader />
-          <Text c="dimmed">Загружаем статистику...</Text>
-        </Group>
-      ) : (
-        <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }}>
-          {metrics.map((metric) => {
-            const Icon = metric.icon;
+      <div>
+        <Title order={4} mb="md">
+          Продажи
+        </Title>
 
-            return (
-              <Card key={metric.title} withBorder radius="lg" padding="lg">
-                <Group justify="space-between" align="flex-start">
-                  <div>
-                    <Text size="sm" c="dimmed">
-                      {metric.title}
-                    </Text>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+          <MetricCard
+            title="Выручка сегодня"
+            value={formatMoney(data.sales_today.revenue)}
+            description="За текущий день"
+            icon={<IconCash size={25} />}
+            color="green"
+          />
 
-                    <Title order={3} mt="sm">
-                      {metric.value}
-                    </Title>
-                  </div>
+          <MetricCard
+            title="Количество продаж"
+            value={String(data.sales_today.checks)}
+            description="Чеков за сегодня"
+            icon={<IconShoppingCart size={25} />}
+            color="blue"
+          />
 
-                  <ThemeIcon
-                    size="xl"
-                    radius="md"
-                    variant="light"
-                    color={metric.color}
-                  >
-                    <Icon size={22} />
-                  </ThemeIcon>
-                </Group>
+          <MetricCard
+            title="Выручка за месяц"
+            value={formatMoney(data.sales_month.revenue)}
+            description={`${data.sales_month.checks} чеков за месяц`}
+            icon={<IconChartBar size={25} />}
+            color="violet"
+          />
 
-                <Text size="xs" c="dimmed" mt="md">
-                  {metric.description}
-                </Text>
-              </Card>
-            );
-          })}
+          <MetricCard
+            title="Средний чек"
+            value={formatMoney(data.average_check_today)}
+            description="Средняя сумма продажи сегодня"
+            icon={<IconTrendingUp size={25} />}
+            color="teal"
+          />
         </SimpleGrid>
-      )}
+      </div>
 
-      <Grid>
-        <Grid.Col span={{ base: 12, lg: 7 }}>
-          <Card withBorder radius="lg" padding="lg" h="100%">
-            <Title order={4} mb="md">
-              Статистика API
-            </Title>
+      <div>
+        <Title order={4} mb="md">
+          Финансы и склад
+        </Title>
 
-            {data && Object.keys(data).length > 0 ? (
-              <Stack gap="sm">
-                {Object.entries(data).map(([key, value]) => (
-                  <Group
-                    key={key}
-                    justify="space-between"
-                    align="flex-start"
-                  >
-                    <Text size="sm" c="dimmed">
-                      {key.replaceAll("_", " ")}
-                    </Text>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+          <MetricCard
+            title="Расходы за месяц"
+            value={formatMoney(data.expenses_month)}
+            description="Все расходы с начала месяца"
+            icon={<IconReceipt size={25} />}
+            color="orange"
+          />
 
-                    <Text size="sm" fw={600} ta="right">
-                      {formatValue(value)}
-                    </Text>
-                  </Group>
-                ))}
-              </Stack>
-            ) : (
-              <Text c="dimmed" size="sm">
-                Данные появятся после загрузки статистики.
-              </Text>
-            )}
-          </Card>
-        </Grid.Col>
+          <MetricCard
+            title="Выручка минус расходы"
+            value={formatMoney(data.revenue_minus_expenses_month)}
+            description="За текущий месяц"
+            icon={<IconWallet size={25} />}
+            color={profit >= 0 ? "green" : "red"}
+          />
 
-        <Grid.Col span={{ base: 12, lg: 5 }}>
-          <Card withBorder radius="lg" padding="lg" h="100%">
-            <Title order={4} mb="md">
-              Состояние системы
-            </Title>
+          <MetricCard
+            title="Клиенты с долгами"
+            value={String(data.customers_with_debt)}
+            description="Клиенты с положительным балансом"
+            icon={<IconUsers size={25} />}
+            color="orange"
+          />
 
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text size="sm">Frontend</Text>
-                <Text size="sm" c="green" fw={600}>
-                  Запущен
-                </Text>
-              </Group>
+          <MetricCard
+            title="Нет доступного остатка"
+            value={String(data.stock_without_available_quantity)}
+            description="Позиции, где весь товар зарезервирован или отсутствует"
+            icon={<IconAlertTriangle size={25} />}
+            color="red"
+          />
+        </SimpleGrid>
+      </div>
 
-              <Group justify="space-between">
-                <Text size="sm">Авторизация</Text>
-                <Text size="sm" c="green" fw={600}>
-                  Выполнена
-                </Text>
-              </Group>
+      <Paper withBorder radius="md" p="lg">
+        <Title order={4} mb="md">
+          Финансовый результат за месяц
+        </Title>
 
-              <Group justify="space-between">
-                <Text size="sm">API статистики</Text>
-                <Text
-                  size="sm"
-                  c={error ? "red" : data ? "green" : "dimmed"}
-                  fw={600}
-                >
-                  {error ? "Ошибка" : data ? "Доступен" : "Нет данных"}
-                </Text>
-              </Group>
-            </Stack>
-          </Card>
-        </Grid.Col>
-      </Grid>
+        <Grid align="center">
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Text size="sm" c="dimmed">
+              Выручка
+            </Text>
+            <Text fw={700} size="xl" c="green">
+              {formatMoney(data.sales_month.revenue)}
+            </Text>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Text size="sm" c="dimmed">
+              Расходы
+            </Text>
+            <Text fw={700} size="xl" c="orange">
+              {formatMoney(data.expenses_month)}
+            </Text>
+          </Grid.Col>
+        </Grid>
+
+        <Group justify="space-between" mt="lg">
+          <Text fw={600}>Разница</Text>
+          <Text fw={700} size="lg" c={profitColor}>
+            {formatMoney(data.revenue_minus_expenses_month)}
+          </Text>
+        </Group>
+      </Paper>
     </Stack>
   );
 }

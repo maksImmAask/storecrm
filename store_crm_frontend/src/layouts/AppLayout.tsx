@@ -11,7 +11,7 @@ import {
   Stack,
   Divider,
 } from "@mantine/core";
-
+import { IconReceipt } from "@tabler/icons-react";
 import {
   IconLayoutDashboard,
   IconBuildingStore,
@@ -24,7 +24,10 @@ import {
   IconLogout,
   IconTruck,
   IconWallet,
+IconArrowsExchange,
+  IconClipboardList,
 } from "@tabler/icons-react";
+import { IconReportAnalytics } from "@tabler/icons-react";
 
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -38,10 +41,35 @@ const navigation = [
     path: "/",
   },
   {
+  label: "Задолженности",
+  icon: IconWallet,
+  path: "/debts",
+},
+{
+  label: "Отчёты",
+  icon: IconReportAnalytics,
+  path: "/reports",
+},
+  {
+  label: "Приёмка товаров",
+  icon: IconClipboardList,
+  path: "/stock-receipts",
+},
+  {
     label: "Филиалы",
     icon: IconBuildingStore,
     path: "/branches",
   },
+  {
+  label: "Перемещения",
+  icon: IconArrowsExchange,
+  path: "/stock-transfers",
+},
+{
+  label: "Расходы",
+  icon: IconReceipt,
+  path: "/expenses",
+},
   {
     label: "Товары",
     icon: IconPackages,
