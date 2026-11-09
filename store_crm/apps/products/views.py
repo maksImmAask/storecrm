@@ -39,13 +39,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return (
             Category.objects
-            .filter(
-                company__owner=self.request.user,
-            )
-            .select_related(
-                "company",
-                "parent",
-            )
+            .filter(company__owner=self.request.user)
+            .select_related("company", "parent")
         )
 
 
@@ -89,11 +84,11 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return (
             Product.objects
-            .filter(
-                company__owner=self.request.user,
-            )
-            .select_related(
-                "company",
-                "category",
-            )
+            .filter(company__owner=self.request.user)
+            .select_related("company", "category")
         )
+
+    def perform_create(self, serializer):
+        category = serializer.validated_data["category"]
+
+        serializer.save(company=category.company)

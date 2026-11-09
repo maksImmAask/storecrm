@@ -23,9 +23,14 @@ import {
   IconReceiptRefund,
   IconLogout,
   IconTruck,
+
+  IconTag,
+  IconBell,
   IconWallet,
 IconArrowsExchange,
   IconClipboardList,
+
+  IconHistory,
 } from "@tabler/icons-react";
 import { IconReportAnalytics } from "@tabler/icons-react";
 
@@ -41,9 +46,29 @@ const navigation = [
     path: "/",
   },
   {
+  label: "Компании",
+  icon: IconBuildingStore,
+  path: "/companies",
+},
+  {
+  label: "Уведомления",
+  icon: IconBell,
+  path: "/notifications",
+},
+  {
   label: "Задолженности",
   icon: IconWallet,
   path: "/debts",
+},
+{
+  label: "Журнал действий",
+  icon: IconHistory,
+  path: "/audit",
+},
+{
+  label: "Категории товаров",
+  icon: IconTag,
+  path: "/categories",
 },
 {
   label: "Отчёты",

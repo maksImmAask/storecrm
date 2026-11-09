@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-
+from .views import LogoutView, WebSocketTicketView
 from .views import LogoutView
 
 
@@ -26,4 +26,9 @@ urlpatterns = [
         LogoutView.as_view(),
         name="logout",
     ),
+    path(
+    "ws-ticket/",
+    WebSocketTicketView.as_view(),
+    name="websocket-ticket",
+),
 ]

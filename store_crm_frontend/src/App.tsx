@@ -16,12 +16,13 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import CompaniesPage from "./pages/CompaniesPage";
 import StockTransfersPage from "./pages/StockTransfersPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import SalesPage from "./pages/SalesPage";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
-import ApiDataPage from "./components/ApiDataPage";
+import CategoriesPage from "./pages/CategoriesPage";
 import { useAuthStore } from "./store/authStore";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -34,6 +35,8 @@ import ProductsPage from "./pages/ProductsPage";
 import ReportsPage from "./pages/ReportsPage";
 import StockReceiptsPage from "./pages/StockReceiptsPage";
 import DebtsPage from "./pages/DebtsPage";
+import AuditPage from "./pages/AuditPage";
+import NotificationsPage from "./pages/NotificationsPage";
 const theme = createTheme({
   primaryColor: "blue",
   defaultRadius: "md",
@@ -123,20 +126,14 @@ function AppRoutes() {
   path="stock-transfers"
   element={<StockTransfersPage />}
 />
+<Route path="companies" element={<CompaniesPage />} />
+<Route path="audit" element={<AuditPage />} />
+<Route path="notifications" element={<NotificationsPage />} />
 <Route path="debts" element={<DebtsPage />} />
 <Route path="sales" element={<SalesPage />} />
 <Route path="returns" element={<ReturnsPage />} />
 <Route path="reports" element={<ReportsPage />} />
-<Route
-  path="debts"
-  element={
-    <ApiDataPage
-      title="Задолженности"
-      description="Просмотр долгов и состояния оплаты."
-      endpoint="/debts/"
-    />
-  }
-/>
+<Route path="categories" element={<CategoriesPage />} />
 
           <Route
             path="finance"

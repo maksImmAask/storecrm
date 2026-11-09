@@ -2,7 +2,7 @@ services:
   web:
     build: .
     container_name: store_crm_web
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     volumes:
       - .:/app
     env_file:

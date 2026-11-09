@@ -1,22 +1,36 @@
-
 import {
   Alert,
   Button,
   Group,
   Modal,
   NumberInput,
+  Select,
   Stack,
   TextInput,
+  Textarea,
+  Loader,
+  Text,
 } from "@mantine/core";
 
 import { useEffect, useState } from "react";
+import api from "../api/client";
 
 export interface Product {
   id?: number | string;
   name: string;
   sku: string;
   barcode: string;
-  price: string | number;
+  category: number | string;
+  category_name?: string;
+  purchase_price: string | number;
+  sale_price: string | number;
+  description?: string;
+  is_active?: boolean;
+}
+
+interface CategoryOption {
+  value: string;
+  label: string;
 }
 
 interface ProductFormModalProps {
@@ -32,8 +46,42 @@ const emptyProduct: Product = {
   name: "",
   sku: "",
   barcode: "",
-  price: "",
+  category: "",
+  purchase_price: "",
+  sale_price: "",
+  description: "",
 };
+
+function getCategories(data: unknown): CategoryOption[] {
+  let items: unknown = data;
+
+  if (typeof data === "object" && data !== null) {
+    const object = data as Record<string, unknown>;
+
+    if (Array.isArray(object.results)) {
+      items = object.results;
+    } else if (Array.isArray(object.data)) {
+      items = object.data;
+    }
+  }
+
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
+        "name" in item,
+    )
+    .map((item) => ({
+      value: String(item.id),
+      label: String(item.name),
+    }));
+}
 
 export default function ProductFormModal({
   opened,
@@ -44,13 +92,56 @@ export default function ProductFormModal({
   onSubmit,
 }: ProductFormModalProps) {
   const [form, setForm] = useState<Product>(emptyProduct);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState("");
   const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
-    if (opened) {
-      setForm(product ? { ...product } : { ...emptyProduct });
-      setValidationError("");
+    if (!opened) return;
+
+    setForm(
+      product
+        ? {
+            ...emptyProduct,
+            ...product,
+            category: product.category
+              ? String(product.category)
+              : "",
+          }
+        : { ...emptyProduct },
+    );
+
+    setValidationError("");
+    setCategoriesError("");
+
+    let cancelled = false;
+
+    async function loadCategories() {
+      setCategoriesLoading(true);
+
+      try {
+        const response = await api.get("/categories/");
+
+        if (!cancelled) {
+          setCategories(getCategories(response.data));
+        }
+      } catch {
+        if (!cancelled) {
+          setCategoriesError("Не удалось загрузить категории.");
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
+      }
     }
+
+    void loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
   }, [opened, product]);
 
   function updateField<K extends keyof Product>(
@@ -63,7 +154,9 @@ export default function ProductFormModal({
     }));
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
     setValidationError("");
 
@@ -72,8 +165,24 @@ export default function ProductFormModal({
       return;
     }
 
-    if (form.price === "" || Number(form.price) < 0) {
-      setValidationError("Введите корректную цену.");
+    if (!form.category) {
+      setValidationError("Выберите категорию товара.");
+      return;
+    }
+
+    if (
+      form.purchase_price === "" ||
+      Number(form.purchase_price) < 0
+    ) {
+      setValidationError("Введите корректную закупочную цену.");
+      return;
+    }
+
+    if (
+      form.sale_price === "" ||
+      Number(form.sale_price) < 0
+    ) {
+      setValidationError("Введите корректную продажную цену.");
       return;
     }
 
@@ -82,7 +191,10 @@ export default function ProductFormModal({
       name: form.name.trim(),
       sku: form.sku.trim(),
       barcode: form.barcode.trim(),
-      price: Number(form.price),
+      category: Number(form.category),
+      purchase_price: Number(form.purchase_price),
+      sale_price: Number(form.sale_price),
+      description: form.description?.trim() || "",
     });
   }
 
@@ -106,6 +218,10 @@ export default function ProductFormModal({
             </Alert>
           )}
 
+          {categoriesError && (
+            <Alert color="red">{categoriesError}</Alert>
+          )}
+
           <TextInput
             label="Название товара"
             placeholder="Например, Ноутбук Lenovo"
@@ -115,6 +231,30 @@ export default function ProductFormModal({
             }
             required
           />
+
+          <Select
+            label="Категория"
+            placeholder="Выберите категорию"
+            data={categories}
+            value={form.category ? String(form.category) : null}
+            onChange={(value) =>
+              updateField("category", value ?? "")
+            }
+            searchable
+            nothingFoundMessage="Категории не найдены"
+            disabled={categoriesLoading}
+            rightSection={
+              categoriesLoading ? <Loader size="xs" /> : undefined
+            }
+            required
+          />
+
+          {!categoriesLoading && categories.length === 0 && (
+            <Alert color="yellow" title="Нет категорий">
+              Сначала создайте категорию в разделе «Категории товаров»,
+              затем вернитесь к созданию товара.
+            </Alert>
+          )}
 
           <TextInput
             label="Артикул (SKU)"
@@ -135,14 +275,45 @@ export default function ProductFormModal({
           />
 
           <NumberInput
-            label="Цена"
+            label="Закупочная цена"
             placeholder="0"
             min={0}
             decimalScale={2}
-            value={form.price}
-            onChange={(value) => updateField("price", value)}
+            value={form.purchase_price}
+            onChange={(value) =>
+              updateField("purchase_price", value)
+            }
             required
           />
+
+          <NumberInput
+            label="Продажная цена"
+            placeholder="0"
+            min={0}
+            decimalScale={2}
+            value={form.sale_price}
+            onChange={(value) =>
+              updateField("sale_price", value)
+            }
+            required
+          />
+
+          <Textarea
+            label="Описание"
+            placeholder="Дополнительная информация о товаре"
+            value={form.description ?? ""}
+            onChange={(event) =>
+              updateField("description", event.currentTarget.value)
+            }
+            autosize
+            minRows={2}
+          />
+
+          {categories.length === 0 && !categoriesLoading && (
+            <Text size="xs" c="dimmed">
+              Создание товара станет доступно после добавления категории.
+            </Text>
+          )}
 
           <Group justify="flex-end" mt="md">
             <Button
@@ -154,7 +325,15 @@ export default function ProductFormModal({
               Отмена
             </Button>
 
-            <Button type="submit" loading={loading}>
+            <Button
+              type="submit"
+              loading={loading}
+              disabled={
+                categoriesLoading ||
+                categories.length === 0 ||
+                Boolean(categoriesError)
+              }
+            >
               {product ? "Сохранить изменения" : "Создать товар"}
             </Button>
           </Group>

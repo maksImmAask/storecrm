@@ -25,7 +25,6 @@ class CategorySerializer(serializers.ModelSerializer):
             "parent_name",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "company_name",
@@ -41,22 +40,25 @@ class CategorySerializer(serializers.ModelSerializer):
             getattr(self.instance, "company", None),
         )
 
-        parent = attrs.get("parent")
-
-        if company.owner_id != request.user.id:
+        if company is None or company.owner_id != request.user.id:
             raise serializers.ValidationError(
-                "You cannot use another user's company."
+                {"company": "Недопустимая компания."}
             )
+
+        parent = attrs.get(
+            "parent",
+            getattr(self.instance, "parent", None),
+        )
 
         if parent:
             if parent.company_id != company.id:
                 raise serializers.ValidationError(
-                    "Parent category must belong to the same company."
+                    {"parent": "Родительская категория должна принадлежать той же компании."}
                 )
 
             if self.instance and parent.id == self.instance.id:
                 raise serializers.ValidationError(
-                    "A category cannot be its own parent."
+                    {"parent": "Категория не может быть родителем самой себя."}
                 )
 
         return attrs
@@ -75,7 +77,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-
         fields = [
             "id",
             "company",
@@ -93,9 +94,9 @@ class ProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
+            "company",
             "company_name",
             "category_name",
             "created_at",
@@ -105,21 +106,24 @@ class ProductSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context["request"]
 
-        company = attrs.get(
-            "company",
-            getattr(self.instance, "company", None),
+        category = attrs.get(
+            "category",
+            getattr(self.instance, "category", None),
         )
 
-        category = attrs.get("category")
-
-        if company.owner_id != request.user.id:
+        if category is None:
             raise serializers.ValidationError(
-                "You cannot use another user's company."
+                {"category": "Выберите категорию товара."}
             )
 
-        if category and category.company_id != company.id:
+        if category.company.owner_id != request.user.id:
             raise serializers.ValidationError(
-                "Category must belong to the same company."
+                {"category": "Вы не можете использовать чужую категорию."}
+            )
+
+        if self.instance and category.company_id != self.instance.company_id:
+            raise serializers.ValidationError(
+                {"category": "Нельзя переместить товар в другую компанию."}
             )
 
         purchase_price = attrs.get(
@@ -134,16 +138,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
         if purchase_price is not None and purchase_price < 0:
             raise serializers.ValidationError(
-                {
-                    "purchase_price": "Purchase price cannot be negative."
-                }
+                {"purchase_price": "Закупочная цена не может быть отрицательной."}
             )
 
         if sale_price is not None and sale_price < 0:
             raise serializers.ValidationError(
-                {
-                    "sale_price": "Sale price cannot be negative."
-                }
+                {"sale_price": "Продажная цена не может быть отрицательной."}
             )
 
         return attrs

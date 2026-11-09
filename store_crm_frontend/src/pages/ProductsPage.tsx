@@ -144,7 +144,9 @@ export default function ProductsPage() {
         product.name,
         product.sku,
         product.barcode,
-        product.price,
+        product.purchase_price,
+        product.sale_price,
+        product.category_name ?? "",
       ]
         .map(String)
         .some((value) => value.toLowerCase().includes(query)),
@@ -164,33 +166,39 @@ export default function ProductsPage() {
   }
 
   async function handleSave(product: Product) {
-    setSaving(true);
-    setFormError("");
+  setSaving(true);
+  setFormError("");
 
-    try {
-      const payload = {
-        name: product.name,
-        sku: product.sku,
-        barcode: product.barcode,
-        price: Number(product.price),
-      };
+  try {
+    const payload = {
+      name: product.name,
+      category: Number(product.category),
+      sku: product.sku,
+      barcode: product.barcode,
+      purchase_price: Number(product.purchase_price),
+      sale_price: Number(product.sale_price),
+      description: product.description ?? "",
+    };
 
-      if (selectedProduct?.id !== undefined) {
-        await api.patch(`/products/${selectedProduct.id}/`, payload);
-      } else {
-        await api.post("/products/", payload);
-      }
-
-      setModalOpened(false);
-      setSelectedProduct(null);
-
-      await loadProducts();
-    } catch (err: unknown) {
-      setFormError(getApiError(err));
-    } finally {
-      setSaving(false);
+    if (selectedProduct?.id !== undefined) {
+      await api.patch(
+        `/products/${selectedProduct.id}/`,
+        payload,
+      );
+    } else {
+      await api.post("/products/", payload);
     }
+
+    setModalOpened(false);
+    setSelectedProduct(null);
+
+    await loadProducts();
+  } catch (err: unknown) {
+    setFormError(getApiError(err));
+  } finally {
+    setSaving(false);
   }
+}
 
   async function handleDelete(product: Product) {
     const confirmed = window.confirm(
@@ -306,7 +314,7 @@ export default function ProductsPage() {
                     </Table.Td>
                     <Table.Td>{product.sku || "—"}</Table.Td>
                     <Table.Td>{product.barcode || "—"}</Table.Td>
-                    <Table.Td>{formatPrice(product.price)}</Table.Td>
+                    <Table.Td>{formatPrice(product.sale_price)}</Table.Td>
                     <Table.Td>
                       <Group gap="xs" wrap="nowrap">
                         <Button
