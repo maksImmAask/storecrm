@@ -367,12 +367,14 @@ export default function CrudResourcePage({
               placeholder={field.placeholder}
               required={field.required}
               value={form[field.name] ?? ""}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  [field.name]: event.currentTarget.value,
-                }))
-              }
+              onChange={(event) => {
+  const value = event.currentTarget.value;
+
+  setForm((previous) => ({
+    ...previous,
+    [field.name]: value,
+  }));
+}}
             />
           ))}
 
