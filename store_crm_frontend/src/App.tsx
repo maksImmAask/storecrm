@@ -37,6 +37,8 @@ import StockReceiptsPage from "./pages/StockReceiptsPage";
 import DebtsPage from "./pages/DebtsPage";
 import AuditPage from "./pages/AuditPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import BranchesPage from "./pages/BranchesPage";
+import WarehousesPage from "./pages/WarehousesPage";
 const theme = createTheme({
   primaryColor: "blue",
   defaultRadius: "md",
@@ -83,41 +85,11 @@ function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
 
-          <Route
-            path="branches"
-            element={
-              <EntityListPage
-                title="Филиалы"
-                description="Филиалы вашей компании"
-                endpoint="/branches/"
-                columns={[
-                  { key: "id", label: "ID" },
-                  { key: "name", label: "Название" },
-                  { key: "address", label: "Адрес" },
-                  { key: "phone", label: "Телефон" },
-                ]}
-              />
-            }
-          />
+          <Route path="branches" element={<BranchesPage />} />
 
           <Route path="products" element={<ProductsPage />} />
 
-          <Route
-            path="warehouses"
-            element={
-              <EntityListPage
-                title="Склады"
-                description="Склады и места хранения"
-                endpoint="/warehouses/"
-                columns={[
-                  { key: "id", label: "ID" },
-                  { key: "name", label: "Название" },
-                  { key: "branch", label: "Филиал" },
-                  { key: "address", label: "Адрес" },
-                ]}
-              />
-            }
-          />
+          <Route path="warehouses" element={<WarehousesPage />} />
 
           <Route path="customers" element={<CustomersPage />} />
 <Route path="expenses" element={<ExpensesPage />} />
